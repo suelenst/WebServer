@@ -35,7 +35,9 @@ final class HttpRequest implements Runnable {
 
         // Extrair o nome do arquivo a linha de requisicao.
         StringTokenizer tokens = new StringTokenizer(requestLine);
-        tokens.nextToken();  // pular o método, que deve ser “GET”
+        
+        String nome = tokens.nextToken();  // pular o método, que deve ser “GET”
+        System.out.println("\n\nAQUIAQUI" + nome + "\n\n" );
         String fileName = tokens.nextToken();
 	
         // Acrescente um “.” de modo que a requisicao do arquivo esteja dentro do diretorio atual.
@@ -116,7 +118,17 @@ final class HttpRequest implements Runnable {
 	}
 	if(fileName.endsWith(".ram") || fileName.endsWith(".ra")) {
 	    return "audio/x-pn-realaudio";
-	}     
+	}
+        
+        // suporte a arquivos de imagem .jpg
+        if(fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+	    return "image/jpeg";
+	}
+        // suporte a arquivos .gif
+        if(fileName.endsWith(".gif ")) {
+	    return "image/gif";
+	}
+              
 	return "application/octet-stream" ;
     }
 }
