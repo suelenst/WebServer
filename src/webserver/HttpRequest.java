@@ -36,8 +36,7 @@ final class HttpRequest implements Runnable {
         // Extrair o nome do arquivo a linha de requisicao.
         StringTokenizer tokens = new StringTokenizer(requestLine);
         
-        String nome = tokens.nextToken();  // pular o método, que deve ser “GET”
-        System.out.println("\n\nAQUIAQUI" + nome + "\n\n" );
+        tokens.nextToken();  // pular o método, que deve ser “GET”
         String fileName = tokens.nextToken();
 	
         // Acrescente um “.” de modo que a requisicao do arquivo esteja dentro do diretorio atual.
