@@ -8,12 +8,12 @@ final class HttpRequest implements Runnable {
     final static String CRLF = "\r\n";
     Socket socket;
     
-    // Constructor
+    // Construtor
     public HttpRequest(Socket socket) throws Exception {
 	this.socket = socket;
     }
     
-    // Implement the run() method of the Runnable interface.
+    // Implemente o método run() da interface Runnable.
     public void run() {
 	try {
 	    processRequest();
@@ -23,25 +23,25 @@ final class HttpRequest implements Runnable {
     }
 
     private void processRequest() throws Exception {
-	// Get a reference to the socket's input and output streams.
+	// Obter uma referencia para os trechos de entrada e saida do socket.
 	InputStream is = socket.getInputStream();
 	DataOutputStream os = new DataOutputStream(socket.getOutputStream());
 	
-	// Set up input stream filters.
+	// Ajustar os filtros do trecho de entrada.
 	BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
-        // Get the request line of the HTTP request message.
+        // Obter a linha de requisicao da mensagem de requisicao HTTP.
         String requestLine = br.readLine();
 
-        // Extract the filename from the request line.
+        // Extrair o nome do arquivo a linha de requisicao.
         StringTokenizer tokens = new StringTokenizer(requestLine);
-        tokens.nextToken();  // skip over the method, which should be "GET"
+        tokens.nextToken();  // pular o método, que deve ser “GET”
         String fileName = tokens.nextToken();
 	
-        // Prepend a "." so that file request is within the current directory.
+        // Acrescente um “.” de modo que a requisicao do arquivo esteja dentro do diretorio atual.
         fileName = "." + fileName ;
 	
-	// Open the requested file.
+	// Abrir o arquivo requisitado.
         FileInputStream fis = null ;
         boolean fileExists = true ;
         try {
@@ -52,13 +52,15 @@ final class HttpRequest implements Runnable {
 
 	// Debug info for private use
 	System.out.println("Incoming!!!");
+        // Exibir a linha de requisicao.
 	System.out.println(requestLine);
+        // Obter e exibir as linhas de cabecalho.
 	String headerLine = null;
 	while ((headerLine = br.readLine()).length() != 0) {
 	    System.out.println(headerLine);
 	}
 	
-	// Construct the response message.
+	// Construir a mensagem de resposta.
         String statusLine = null;
         String contentTypeLine = null;
         String entityBody = null;
@@ -73,16 +75,16 @@ final class HttpRequest implements Runnable {
 		"<HEAD><TITLE>Not Found</TITLE></HEAD>" +
 		"<BODY>Not Found</BODY></HTML>";
         }
-	// Send the status line.
+	// Enviar a linha de status.
         os.writeBytes(statusLine);
 
-        // Send the content type line.
+        // Enviar a linha de tipo de conteudo.
         os.writeBytes(contentTypeLine);
 
-        // Send a blank line to indicate the end of the header lines.
+        // Enviar uma linha em branco para indicar o fim das linhas de cabecalho.
         os.writeBytes(CRLF);
 
-        // Send the entity body.
+        // Enviar o corpo da entidade.
         if (fileExists) {
 	    sendBytes(fis, os);
 	    fis.close();
@@ -90,7 +92,7 @@ final class HttpRequest implements Runnable {
 	    os.writeBytes(entityBody) ;
         }
 
-        // Close streams and socket.
+        // Fecha as cadeias e socket.
         os.close();
         br.close();
         socket.close();
@@ -98,11 +100,11 @@ final class HttpRequest implements Runnable {
 
     private static void sendBytes(FileInputStream fis, 
 				  OutputStream os) throws Exception {
-	// Construct a 1K buffer to hold bytes on their way to the socket.
+	// Construir um buffer de 1K para comportar os bytes no caminho para o socket.
 	byte[] buffer = new byte[1024];
 	int bytes = 0;
 	
-	// Copy requested file into the socket's output stream.
+	// Copiar o arquivo requisitado dentro da cadeia de saida do socket.
 	while ((bytes = fis.read(buffer)) != -1) {
 	    os.write(buffer, 0, bytes);
 	}
@@ -114,7 +116,7 @@ final class HttpRequest implements Runnable {
 	}
 	if(fileName.endsWith(".ram") || fileName.endsWith(".ra")) {
 	    return "audio/x-pn-realaudio";
-	}
+	}     
 	return "application/octet-stream" ;
     }
 }
