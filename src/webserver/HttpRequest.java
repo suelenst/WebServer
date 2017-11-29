@@ -6,7 +6,7 @@ import java.util.* ;
 
 final class HttpRequest implements Runnable {
     final static String CRLF = "\r\n";
-    protected int maxRequestLines = 50;
+
     Socket socket;
     
     // Construtor
@@ -48,6 +48,24 @@ final class HttpRequest implements Runnable {
         // Abrir o arquivo requisitado.
         FileInputStream fis = null ;
         
+        // Debug info for private use
+        
+        System.out.println("\n\nREQUISICAO: ");
+        System.out.println("============ \n");
+        // Exibir a linha de requisicao.
+        System.out.println(requestLine);
+        // Obter e exibir as linhas de cabecalho.
+        String headerLine = null;
+        int contentLength = 0;
+        
+        while ((headerLine = br.readLine()).length() != 0) {
+            System.out.println(headerLine);            
+            
+            if (headerLine.startsWith("Content-Length")){
+                contentLength = getLength(headerLine);
+            }
+        }
+        
         if (tipo.equalsIgnoreCase("GET")){
   
             fileName = tokens.nextToken();
@@ -61,70 +79,54 @@ final class HttpRequest implements Runnable {
                 fileExists = false ;
             }
 
-            // Debug info for private use
-            System.out.println("Incoming!!!");
-            // Exibir a linha de requisicao.
-            System.out.println(requestLine);
-            // Obter e exibir as linhas de cabecalho.
-            String headerLine = null;
-            while ((headerLine = br.readLine()).length() != 0) {
-                System.out.println(headerLine);
-            }
-        
-
         } else if (tipo.equalsIgnoreCase("POST")){        
         
-            String[] inputLines = new String[maxRequestLines];
-            int i;
-
-            for (i=0; i<maxRequestLines; i++) {
-                inputLines[i] = br.readLine();
-                if (inputLines[i] == null) // Conexão fechada pelo cliente.
-                    break;
-                if (inputLines[i].length() == 0) { // Linha em branco
-                        readPostData(inputLines, i, br);
-                        i = i + 2;
-                    
-                        break;
-                }
-            }
+            char[] postData = new char[contentLength];
+            br.read(postData, 0, contentLength);
+            String post = new String(postData, 0, contentLength);
             
-            System.out.println("\nCONTEUDO DO POST \n\n");
-            
-            for (int j=0; j<i; j++) {
-                System.out.println(inputLines[j]);
-            }
-            
-            fileExists = false ;
-
-
-          
-        } else {
-            fileExists = false ;
+            MostraCampos(SeparaCampos(post));
+                              
         }
         
         // Construir a mensagem de resposta.
         String statusLine = null;
         String contentTypeLine = null;
         String entityBody = null;
-        if (fileExists) {
-            statusLine = "HTTP/1.0 200 OK" + CRLF;
-            contentTypeLine = "Content-Type: " + 
-                contentType(fileName) + CRLF;
+        
+        if (tipo.equalsIgnoreCase("GET")){          
             
-        } else if (tipo.equalsIgnoreCase("POST")){
+            if (fileExists) {
+                statusLine = "HTTP/1.0 200 OK" + CRLF;
+                contentTypeLine = "Content-Type: " + 
+                    contentType(fileName) + CRLF;
+
+            } else {
+                statusLine = "HTTP/1.0 404 Not Found" + CRLF;
+                contentTypeLine = "Content-Type: text/html" + CRLF;
+                entityBody = "<HTML>" + 
+                    "<HEAD><TITLE>Not Found</TITLE></HEAD>" +
+                    "<BODY>Not Found</BODY></HTML>";
+            }
+            
+        } else  if (tipo.equalsIgnoreCase("POST")){
+            
             statusLine = "HTTP/1.0 200 OK" + CRLF;
             contentTypeLine = "Content-Type: text/html" + CRLF;
             entityBody = "<HTML>" + 
                 "<HEAD><TITLE>Enviado</TITLE></HEAD>" +
-                "<BODY>Enviado com sucesso ao servidor</BODY></HTML>";                       
+                "<BODY>Enviado com sucesso ao servidor</BODY></HTML>";  
+ 
+            
         } else {
-            statusLine = "HTTP/1.0 404 Not Found" + CRLF;
+            statusLine = "HTTP/1.0 400 Bad request" + CRLF;
             contentTypeLine = "Content-Type: text/html" + CRLF;
             entityBody = "<HTML>" + 
-                "<HEAD><TITLE>Not Found</TITLE></HEAD>" +
-                "<BODY>Not Found</BODY></HTML>";
+                "<HEAD><TITLE>Bad request</TITLE></HEAD>" +
+                "<BODY>Bad request</BODY></HTML>";
         }
+        
+        
         // Enviar a linha de status.
         os.writeBytes(statusLine);
 
@@ -135,7 +137,9 @@ final class HttpRequest implements Runnable {
         os.writeBytes(CRLF);
 
         // Enviar o corpo da entidade.
-        if (fileExists) {
+        if (tipo.equalsIgnoreCase("GET") && fileExists){
+
+
             sendBytes(fis, os);
             fis.close();
         } else {
@@ -181,32 +185,40 @@ final class HttpRequest implements Runnable {
 	return "application/octet-stream" ;
     }
     
-    private void readPostData(String[] inputs, int i, BufferedReader in) throws IOException {
-        int contentLength = contentLength(inputs);
-        char[] postData = new char[contentLength];
-        in.read(postData, 0, contentLength);
-        inputs[++i] = new String(postData, 0, contentLength);
-    }
-
-      // Dada uma linha que começa com Content-Length,
-     // isso retorna o valor inteiro especificado.
-
-    private int contentLength(String[] inputs) {
-        String input;
-        for (int i=0; i<inputs.length; i++) {
-            if (inputs[i].length() == 0)
-                break;
-            input = inputs[i].toUpperCase();
-            if (input.startsWith("CONTENT-LENGTH"))
-                return(getLength(input));
-        }
-        return(0);
-    }
 
     private int getLength(String length) {
         StringTokenizer tok = new StringTokenizer(length);
         tok.nextToken();
         return(Integer.parseInt(tok.nextToken()));
+    }
+    
+    
+    private static ArrayList SeparaCampos(String post) {
+        String split1[] = post.split("&");
+
+        ArrayList<CampoForm> campos = new ArrayList();
+
+        for (int i = 0; i < split1.length; i ++){
+            String split2[] = split1[i].split("=");
+            campos.add(new CampoForm(split2[0].replace('+', ' '), split2[1].replace('+', ' ')));
+        }
+        
+        return campos;
+
+    }
+    
+        
+    private static void MostraCampos(ArrayList<CampoForm> campos) {
+        System.out.println("\n\nCampos Formulario");
+        System.out.println("====================================");
+        System.out.println("Campo:                      Conteudo:");
+
+        for (int i = 0; i < campos.size(); i ++){
+            System.out.print(campos.get(i).getNomeCampo() + "                    ");
+            System.out.println(campos.get(i).getConteudoCampo());
+
+        }
+        System.out.println("====================================\n\n");
     }
     
     
