@@ -193,14 +193,14 @@ final class HttpRequest implements Runnable {
     }
     
     
-    private static ArrayList SeparaCampos(String post) {
+    private static ArrayList SeparaCampos(String post) throws UnsupportedEncodingException {
         String split1[] = post.split("&");
 
         ArrayList<CampoForm> campos = new ArrayList();
 
         for (int i = 0; i < split1.length; i ++){
             String split2[] = split1[i].split("=");
-            campos.add(new CampoForm(split2[0].replace('+', ' '), split2[1].replace('+', ' ')));
+            campos.add(new CampoForm(java.net.URLDecoder.decode(split2[0], "UTF-8"), java.net.URLDecoder.decode(split2[1], "UTF-8")));            
         }
         
         return campos;
